@@ -35,10 +35,7 @@ class CheXpertDataset(Dataset):
         if len(files) == 0:
             raise ValueError(f'Data path {self.data_path} does not contain any .npy files')
         
-        # store a list of the filenames as a class variable
         self.file_names = files
-
-        # Do we need to numerically order the filenames? Perhaps store mappings between index and patient
 
         
     def __len__(self):
@@ -49,7 +46,7 @@ class CheXpertDataset(Dataset):
         if idx >= len(self):
             raise IndexError(f'Index {idx} is out of range for dataset of length {len(self)}')
         
-        img_name = os.path.join(self.data_path, self.file_names[idx])
+        img_name = os.path.join(self.data_path, f"img_{format(idx, '05d')}.npy")
         image = np.load(img_name)
 
         if self.transform:
@@ -67,3 +64,4 @@ dataset = CheXpertDataset(root_dir, split='train', transform=transforms.ToTensor
 print(len(dataset))
 print(dataset[0][0].shape)
 print(dataset[0][1])
+

@@ -7,6 +7,7 @@ from copy import copy
 from scipy.stats import entropy
 from PIL import Image as im
 from samMedEncoder import SamMedEncoder
+import os
 
 
 class DiversityScore:
@@ -14,47 +15,25 @@ class DiversityScore:
     Class for computing the diversity score for a dataset via a similarity matrix.
     """
 
-    def __init__(self, data, data_rgb, indices, params):
+    def __init__(self, data, indices, params):
         # check that the vectors parameter is a numpy array with two dimensions
         assert isinstance(params, dict), "params should be a dictionary"
         assert isinstance(data, Dataset), "train_data is not an instance of Dataset"
 
         self.params = params
         self.data = data
-        self.data_rgb = data_rgb
         self.indices = indices
-        self.code_dir = params["code_dir"]
+
+        # check that we have a dataset_name parameter in the params dictionary
+        assert "dataset_name" in params, "dataset_name is not in params dictionary"
+
+        # check that the dataset_name parameter is a string
+        assert isinstance(params["dataset_name"], str), "dataset_name is not a string"
+
+        self.dataset_name = params["dataset_name"]
 
     def __len__(self):
         return self.vectors.shape[0]
-
-    def getPixelVectors(self, data):
-        """
-        Coverts a dataset of 2D images into an array of 1D pixel vectors
-        :return:
-        pixel_vectors: 2D pixel vector array
-        """
-        data_loader = torch.utils.data.DataLoader(data, batch_size=self.params["batch_size"], num_workers=self.params["n_workers"])
-
-        for i, (images, labels) in enumerate(data_loader):
-            # convert to a numpy array for easier handling after detaching gradient
-            images = images.numpy()
-
-            # flatten all dimensions except the first
-            flattened_size = np.prod(images.shape[1:])
-            images_flat = images.reshape((images.shape[0], flattened_size))
-
-            # stack the results from each batch until we have run over the entire dataset
-            if i == 0:
-                # assign the values of images compressed to output
-                pixel_vectors = copy(images_flat)
-            else:
-                pixel_vectors = np.vstack((pixel_vectors, images_flat))
-
-        assert len(pixel_vectors.shape) == 2, "The output array should have two dimensions but it has {}".format(
-            len(pixel_vectors.shape))
-
-        return pixel_vectors
 
     def cosineSimilarity(self, vectorsA, vectorsB):
         """
@@ -86,8 +65,8 @@ class DiversityScore:
             data = [im.fromarray(self.data[i][0].squeeze().numpy()) for i in range(len(self.data))]
             vectors = vendiScore.getInceptionEmbeddings(data)
         elif embed == "sammed":
-            encoder = SamMedEncoder(self.data, self.params, 0)
-            vectors = encoder.retrieve(self.indices)
+            encoder = SamMedEncoder(self.data, self.dataset_name)
+            vectors = encoder.retrieve(self.indices, os.path.join("SAMMedEncodings", f"{self.dataset_name}"))
 
         similarity_matrix = self.cosineSimilarity(vectors, vectors)
 

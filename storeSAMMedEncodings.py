@@ -23,5 +23,5 @@ dataset = CheXpertDataset(data_dir, split='train', transform=transforms.ToTensor
 
 checkpoint_path = os.path.join("SAMMedCheckpoint/pretrain_model/sam-med2d_b.pth")
 
-encoder = SamMedEncoder(dataset, start_idx, "CheXpert", checkpoint_path)
-encoder.encode()
+encoder = SamMedEncoder(dataset, "CheXpert")
+encoder.encode(start_idx, checkpoint_path)

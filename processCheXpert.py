@@ -17,15 +17,23 @@ def createReducedTrainCSV(train_dir, train_csv):
     patients = os.listdir(train_dir)
     patients = [p for p in patients if p != '.DS_Store']
 
+    # order the patients list by patient ID
+    patients.sort()
+
     # open the train.csv file
     train = pd.read_csv(train_csv)
 
     # create an empty pandas dataframe to store information about patients with a view1 frontal image
     train_reduced = pd.DataFrame(columns=train.columns)
 
-    # Add some extra columns to the train_reduced dataframe for x and y dimensions of the image
+    # Add some extra columns to the train_reduced dataframe for x and y dimensions of the image and the patient ID and image ID
     train_reduced["img_shape_x"] = None
     train_reduced["img_shape_y"] = None
+    train_reduced["patient_id"] = None
+    train_reduced["image_id"] = None
+
+    # Start a counter which will increment whenever we save a new file
+    image_counter = 0
 
     # cycle over the patient's folders and check they have a study1 view1 frontal image
     for p in patients:
@@ -43,7 +51,7 @@ def createReducedTrainCSV(train_dir, train_csv):
             img_np = img_np.astype(np.float32)
 
             # save the numpy array as a .npy file
-            np.save(os.path.join(root_dir, 'train_npy', f"img_{p[7:]}.npy"), img_np)
+            np.save(os.path.join(root_dir, 'train_npy', f"img_{format(image_counter, '05d')}.npy"), img_np)
 
             # copy the information from train.csv to the train_reduced.csv  
             patient_info = train[train['Path'] == os.path.join("CheXpert-v1.0-small/train", p, 'study1', 'view1_frontal.jpg')]
@@ -51,9 +59,15 @@ def createReducedTrainCSV(train_dir, train_csv):
             # add the x and y dimensions of the image
             patient_info["img_shape_x"] = img_np.shape[0]
             patient_info["img_shape_y"] = img_np.shape[1]
+            patient_info["patient_id"] = p
+            patient_info["image_id"] = format(image_counter, '05d')
 
             # update the train_reduced dataframe
             train_reduced = train_reduced.append(patient_info)
+
+            # increment the image counter
+            image_counter += 1
+            
 
     # save the train_reduced.csv
     train_reduced.to_csv(os.path.join(root_dir, 'train_reduced.csv'), index=False)
@@ -104,10 +118,10 @@ def plotImageShapeDistribution():
 
 
 def main():
-    #createReducedTrainCSV(train_dir, train_csv)
+    createReducedTrainCSV(train_dir, train_csv)
     #plotImageShapeDistribution()
     #plotSexDistribution()
-    plotAgeDistribution()
+    #plotAgeDistribution()
 
 
 if __name__ == '__main__':

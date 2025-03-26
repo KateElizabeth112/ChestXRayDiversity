@@ -13,31 +13,16 @@ import os
 
 
 class SamMedEncoder:
-    def __init__(self, data, start_idx, dataset_name, checkpoint_path):
+    def __init__(self, data, dataset_name):
         # check that the dataset parameter is an instance of Dataset
         assert isinstance(data, Dataset), "train_data is not an instance of Dataset"
-
-        # check that the start_idx parameter is an integer
-        assert isinstance(start_idx, int), "start_idx is not an integer"
 
         # check that the dataset_name parameter is a string
         assert isinstance(dataset_name, str), "dataset_name is not a string"
 
-
-        # check that the checkpoint_path parameter is a string
-        assert isinstance(checkpoint_path, str), "checkpoint_path is not a string"
-
-        # check that the checkpoint_path parameter is a valid path
-        assert os.path.exists(checkpoint_path), "checkpoint_path does not exist"
-
-        # check that the checkpoint_path parameter ends with .pth
-        assert checkpoint_path[-4:] == ".pth", "checkpoint_path does not end with .pth"
-
         self.data = data
-        self.start_idx = start_idx
         self.dataset_name = dataset_name
-        self.checkpoint_path = checkpoint_path
-
+        
         # create a directory to store encodings
         if not os.path.exists("SAMMedEncodings"):
             os.mkdir("SAMMedEncodings")
@@ -49,7 +34,20 @@ class SamMedEncoder:
         # set up a data loader. batch size must be 1 for SAMMed Encoder
         self.data_loader = torch.utils.data.DataLoader(self.data, batch_size=1, shuffle=False)
 
-    def encode(self):
+    def encode(self, start_idx, checkpoint_path):
+        # check the input parameters
+        # check that the start_idx parameter is an integer
+        assert isinstance(start_idx, int), "start_idx is not an integer"
+
+        # check that the checkpoint_path parameter is a string
+        assert isinstance(checkpoint_path, str), "checkpoint_path is not a string"
+
+        # check that the checkpoint_path parameter is a valid path
+        assert os.path.exists(checkpoint_path), "checkpoint_path does not exist"
+
+        # check that the checkpoint_path parameter ends with .pth
+        assert checkpoint_path[-4:] == ".pth", "checkpoint_path does not end with .pth"
+
         args = Namespace()
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         args.image_size = 256
@@ -72,10 +70,13 @@ class SamMedEncoder:
                 pkl.dump(embedding.flatten().unsqueeze(0), f)
                 f.close()
 
-    def retrieve(self, indices):
+    def retrieve(self, indices, encodings_dir):
+        # check that we have a directory where the encodings are stored
+        assert os.path.exists(encodings_dir), "Encodings directory does not exist"
+
         # retrieve pre-computed embeddings based on a list of indicies
         for p in range(indices.shape[0]):
-            f = open(os.path.join(self.representations_dir, "img_{}.pkl".format(indices[p])), "rb")
+            f = open(os.path.join(encodings_dir, "img_{}.pkl".format(indices[p])), "rb")
             embedding = pkl.load(f)
             f.close()
 
