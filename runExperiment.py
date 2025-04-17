@@ -8,9 +8,11 @@ import os
 import numpy as np
 import pandas as pd
 import pickle as pkl
+import mlflow
+import argparse
 
 
-def runExperiment(num_samples, num_repeats, demographic, values, dataset_name, root_dir, save=False):
+def runExperiment(num_samples, num_repeats, demographic, values, dataset_name, root_dir):
 
     if dataset_name == "CheXpert":
         dataset = CheXpertDataset(os.path.join(root_dir, "CheXpertSmall"), split='train', transform=transforms.ToTensor())
@@ -22,12 +24,6 @@ def runExperiment(num_samples, num_repeats, demographic, values, dataset_name, r
         raise ValueError("Dataset not supported")
     
     for value in values:
-        # create containers to store the diversity scores which are initiated to NaN
-        vendi_scores_inception = np.zeros((len(num_samples), num_repeats))
-        vendi_scores_inception.fill(np.nan)
-        vendi_scores_sammed = np.zeros((len(num_samples), num_repeats))
-        vendi_scores_sammed.fill(np.nan)
-
         for ns in num_samples:
             for i in range(num_repeats):
                 print(f"scoring diversity for {value} {ns} samples, repeat {i}")
@@ -60,14 +56,21 @@ def runExperiment(num_samples, num_repeats, demographic, values, dataset_name, r
                     scores = {"vs_inception": np.nan, "vs_sammed": np.nan}
 
                 # store the results
-                vendi_scores_inception[num_samples.index(ns), i] = scores["vs_inception"]
-                vendi_scores_sammed[num_samples.index(ns), i] = scores["vs_sammed"]
+                with mlflow.start_run():
+                    print("Starting mlflow logging")
+                    # Log the parameters
+                    params = {  
+                        "num_samples": ns,
+                        "demographic": demographic,
+                        "value": value,
+                        "dataset_name": dataset_name,
+                    }
 
-                if save:
-                    # save the results as a pickle file
-                    f = open(f"results_{value}.pkl", "wb")
-                    pkl.dump({"vendi_scores_inception": vendi_scores_inception, "vendi_scores_sammed": vendi_scores_sammed}, f)
-                    f.close()
+                    mlflow.log_params(params)
+
+                    # Log the diversity metrics for the training data
+                    mlflow.log_metric("vs_inception", scores["vs_inception"])
+                    mlflow.log_metric("vs_sammed", scores["vs_sammed"])
     
 
     # create containers to store the diversity scores which are initiated to NaN
@@ -139,14 +142,22 @@ def runExperiment(num_samples, num_repeats, demographic, values, dataset_name, r
             scores = ds.scoreDiversity()
 
             # store the results
-            vendi_scores_inception[num_samples.index(ns), i] = scores["vs_inception"]
-            vendi_scores_sammed[num_samples.index(ns), i] = scores["vs_sammed"]
-            
-            # save the results as a pickle file
-            if save:
-                f = open(f"results_mixed.pkl", "wb")
-                pkl.dump({"vendi_scores_inception": vendi_scores_inception, "vendi_scores_sammed": vendi_scores_sammed}, f)
-                f.close()
+            with mlflow.start_run():
+                print("Starting mlflow logging")
+                # Log the parameters
+                params = {  
+                    "num_samples": ns,
+                    "demographic": demographic,
+                    "value": values,
+                    "dataset_name": dataset_name,
+                }
+
+                mlflow.log_params(params)
+
+                # Log the diversity metrics for the training data
+                mlflow.log_metric("vs_inception", scores["vs_inception"])
+                mlflow.log_metric("vs_sammed", scores["vs_sammed"])
+
 
 def plotResults(values, num_samples, encoder, results_dir):       
     # Now we can plot the re1sults
@@ -192,6 +203,11 @@ def plotResults(values, num_samples, encoder, results_dir):
 def main():
     root_dir = '/Users/katephd/Documents/data/'
 
+    mlflow.set_tracking_uri(uri="http://127.0.0.1:8080")
+
+    # Create a new MLflow Experiment
+    mlflow.set_experiment("ChestXRayDiversity")
+
     num_repeats = 3
     #num_samples = [50, 100, 200, 500, 1000]
     num_samples = [50, 200, 1000]
@@ -204,11 +220,11 @@ def main():
     dataset_name = "CheXpert"
 
     # run the experiment
-    #runExperiment(num_samples, num_repeats, demographic, values, dataset_name, root_dir, save=True)
+    runExperiment(num_samples, num_repeats, demographic, values, dataset_name, root_dir, save=True)
 
     # plot the results
-    plotResults(values, num_samples, "inception", ".")
-    plotResults(values, num_samples, "sammed", ".")
+    #plotResults(values, num_samples, "inception", ".")
+    #plotResults(values, num_samples, "sammed", ".")
 
 
 if __name__ == "__main__":
