@@ -152,23 +152,36 @@ def plotResults(values, num_samples, encoder, results_dir):
     # Now we can plot the re1sults
     plt.clf()
 
+    # generate a color map
+    colors = plt.cm.viridis(np.linspace(0, 1, len(values) + 1))
+
     # load the results
-    for value in values:
+    for value, i in zip(values, range(len(values))):
+        # load the results for each demographic value
         f = open(os.path.join(results_dir, f"results_{value}.pkl"), "rb")
         results = pkl.load(f)
         f.close()
 
-        scores = np.mean(results[f"vendi_scores_{encoder}"], axis=1)
-        plt.plot(num_samples, scores, label=value)
+        # calculate the average and standard deviation of the scores
+        av_scores = np.mean(results[f"vendi_scores_{encoder}"], axis=1)
+        std_scores = np.std(results[f"vendi_scores_{encoder}"], axis=1)
+
+        # plot the results
+        plt.plot(num_samples, av_scores, color=colors[i], label=value)
+        plt.fill_between(num_samples, av_scores + std_scores, av_scores - std_scores, color=colors[i], alpha=0.2)
 
 
     f = open(os.path.join(results_dir, f"results_mixed.pkl"), "rb")
     results_mixed = pkl.load(f)
     f.close()
+    
+    # calculate the average and standard deviation of the scores
+    av_scores_mixed = np.mean(results_mixed[f"vendi_scores_{encoder}"], axis=1)
+    std_scores_mixed = np.std(results_mixed[f"vendi_scores_{encoder}"], axis=1)
 
-    scores_mixed = np.mean(results_mixed[f"vendi_scores_{encoder}"], axis=1)
-
-    plt.plot(num_samples, scores, label="Mixed")
+    # plot the results
+    plt.plot(num_samples, av_scores_mixed, color=colors[i+1], label="Mixed")
+    plt.fill_between(num_samples, av_scores_mixed + std_scores_mixed, av_scores_mixed - std_scores_mixed, color=colors[i+1], alpha=0.2)
 
     plt.legend()
     plt.xlabel("Number of samples")
@@ -191,7 +204,7 @@ def main():
     dataset_name = "CheXpert"
 
     # run the experiment
-    runExperiment(num_samples, num_repeats, demographic, values, dataset_name, root_dir, save=True)
+    #runExperiment(num_samples, num_repeats, demographic, values, dataset_name, root_dir, save=True)
 
     # plot the results
     plotResults(values, num_samples, "inception", ".")
