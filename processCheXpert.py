@@ -118,10 +118,10 @@ def plotImageShapeDistribution():
 
 
 def main():
-    createReducedTrainCSV(train_dir, train_csv)
+    #createReducedTrainCSV(train_dir, train_csv)
     #plotImageShapeDistribution()
     #plotSexDistribution()
-    #plotAgeDistribution()
+    plotAgeDistribution()
 
 
 if __name__ == '__main__':

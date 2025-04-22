@@ -11,6 +11,28 @@ import pickle as pkl
 import mlflow
 import argparse
 
+# Set up the argument parser
+parser = argparse.ArgumentParser(description="Calculate the diversity scores for various stratifications from a ChestXRay dataset.")
+parser.add_argument("-d", "--demographic", type=str, help="Demographic to stratify the dataset by", default="Atelectasis")
+parser.add_argument("-v", "--values", type=list, nargs='+', help="Demographic values to stratify the dataset by", default=[1, 0, -1])
+parser.add_argument("-n", "--num_samples", type=list, nargs='+', help="Number of samples to use for diversity scoring", default=[50, 100, 200, 500, 1000])
+parser.add_argument("-s", "--num_repeats", type=str, help="Number of repeats to use for diversity scoring", default="3")
+parser.add_argument("-f", "--dataset_name", type=str, help="Name of the dataset to use for diversity scoring", default="CheXpert")
+parser.add_argument("-r", "--root_dir", type=str, help="Root directory where the code and data are located",
+                    default="/Users/katecevora/Documents/PhD")
+
+args = parser.parse_args()
+
+num_repeats = int(args.num_repeats)
+num_samples = args.num_samples
+#demographic = "Sex"
+#values = ["Male", "Female"]
+#demographic = "Age"
+#values = ["20-30", "30-40", "40-50", "50-60", "60-70", "70-80"]
+demographic = args.demographic
+values = args.values
+dataset_name = args.dataset_name
+
 
 def runExperiment(num_samples, num_repeats, demographic, values, dataset_name, root_dir):
 
@@ -208,19 +230,8 @@ def main():
     # Create a new MLflow Experiment
     mlflow.set_experiment("ChestXRayDiversity")
 
-    num_repeats = 3
-    #num_samples = [50, 100, 200, 500, 1000]
-    num_samples = [50, 200, 1000]
-    #demographic = "Sex"
-    #values = ["Male", "Female"]
-    #demographic = "Age"
-    #values = ["20-30", "30-40", "40-50", "50-60", "60-70", "70-80"]
-    demographic = "Atelectasis"
-    values = [1, 0]
-    dataset_name = "CheXpert"
-
     # run the experiment
-    runExperiment(num_samples, num_repeats, demographic, values, dataset_name, root_dir, save=True)
+    runExperiment(num_samples, num_repeats, demographic, values, dataset_name, root_dir)
 
     # plot the results
     #plotResults(values, num_samples, "inception", ".")
