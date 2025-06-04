@@ -7,6 +7,7 @@ from copy import copy
 from scipy.stats import entropy
 from PIL import Image as im
 from samMedEncoder import SamMedEncoder
+from cxrFoundationEncoder import CxrFoundationEncoder
 import os
 
 
@@ -67,6 +68,9 @@ class DiversityScore:
         elif embed == "sammed":
             encoder = SamMedEncoder(self.data, self.dataset_name)
             vectors = encoder.retrieve(self.indices, os.path.join("SAMMedEncodings", f"{self.dataset_name}"))
+        elif embed == "cxrfoundation":
+            encoder = CxrFoundationEncoder(self.data, self.dataset_name)
+            vectors = encoder.retrieve(self.indices, os.path.join("CxrFoundationEncodings", f"{self.dataset_name}"))
 
         similarity_matrix = self.cosineSimilarity(vectors, vectors)
 
@@ -105,7 +109,7 @@ class DiversityScore:
         results = {}
         #results["label_entropy"] = self.labelEntropy()
 
-        for embedding in ["inception", "sammed"]:
+        for embedding in ["inception", "sammed", "cxrfoundation"]:
             vs, intdiv = self.vendiScore(embed=embedding)
             results["vs_{}".format(embedding)] = vs
             results["intdiv_{}".format(embedding)] = intdiv

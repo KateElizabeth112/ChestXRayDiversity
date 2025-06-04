@@ -75,7 +75,7 @@ def runExperiment(num_samples, num_repeats, demographic, values, dataset_name, r
 
                     scores = ds.scoreDiversity()
                 else:
-                    scores = {"vs_inception": np.nan, "vs_sammed": np.nan}
+                    scores = {"vs_inception": np.nan, "vs_sammed": np.nan, "vs_cxrfoundation": np.nan}
 
                 # store the results
                 with mlflow.start_run():
@@ -93,6 +93,7 @@ def runExperiment(num_samples, num_repeats, demographic, values, dataset_name, r
                     # Log the diversity metrics for the training data
                     mlflow.log_metric("vs_inception", scores["vs_inception"])
                     mlflow.log_metric("vs_sammed", scores["vs_sammed"])
+                    mlflow.log_metric("vs_cxrfoundation", scores["vs_cxrfoundation"])
     
 
     # create containers to store the diversity scores which are initiated to NaN
@@ -100,6 +101,8 @@ def runExperiment(num_samples, num_repeats, demographic, values, dataset_name, r
     vendi_scores_inception.fill(np.nan)
     vendi_scores_sammed = np.zeros((len(num_samples), num_repeats))
     vendi_scores_sammed.fill(np.nan)
+    vendi_scores_cxrfoundation = np.zeros((len(num_samples), num_repeats))
+    vendi_scores_cxrfoundation.fill(np.nan)
 
     # create a flag that will be set when we can no longer run experiments
     SKIP_FLAG = False
@@ -179,6 +182,7 @@ def runExperiment(num_samples, num_repeats, demographic, values, dataset_name, r
                 # Log the diversity metrics for the training data
                 mlflow.log_metric("vs_inception", scores["vs_inception"])
                 mlflow.log_metric("vs_sammed", scores["vs_sammed"])
+                mlflow.log_metric("vs_cxrfoundation", scores["vs_cxrfoundation"])
 
 
 def plotResults(values, num_samples, encoder, results_dir):       
