@@ -218,12 +218,12 @@ def plotComputationalComplexity():
     plt.show()    
 
 def main():
-    n_samples = [10, 50, 100, 200, 500, 1000, 2000, 5000, 10000]
+    n_samples = [10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 50000, 100000]
 
     #plotOffDiagonalSimilarity()
     getComputationalComplexityVS(n_samples)
     getComputationalComplexitySim(n_samples, n_features=[10, 50, 100, 200, 500])
-    plotComputationalComplexity()
+    #plotComputationalComplexity()
 
 if __name__ == "__main__":
     main()
