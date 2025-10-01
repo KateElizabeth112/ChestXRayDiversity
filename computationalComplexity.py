@@ -1,7 +1,7 @@
 # script to prepare some plots to illustrate computational complexity of the Vendi score as well as the impact of dataset size and average similarity
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
+#import seaborn as sns
 import vendiScore
 import time
 import pickle as pkl
