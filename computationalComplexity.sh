@@ -1,6 +1,6 @@
 #!/bin/bash
 #PBS -l walltime=12:00:00
-#PBS -l select=1:ncpus=30:mem=150gb
+#PBS -l select=1:ncpus=30:mem=200gb
 
 # bash script to run generalisation experiments on HPC
 cd ${PBS_O_WORKDIR}

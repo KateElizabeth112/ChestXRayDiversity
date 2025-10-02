@@ -109,12 +109,13 @@ def getComputationalComplexityVS(n_samples):
         end_time = time.time()
         elapsed_time = end_time - start_time
         times.append(elapsed_time)
-        print(f"Computed Vendi score for n={n} in {elapsed_time:.4f} seconds")
 
-    # save the results to a file so we can use them later
-    import pickle as pkl
-    with open("computational_complexity_vs.pkl", "wb") as f:
-        pkl.dump((n_samples, times), f)
+        # save the result intermittently incase of crash
+        with open("computational_complexity_vs.pkl", "wb") as f:
+            pkl.dump((n_samples, times), f)
+
+
+        print(f"Computed Vendi score for n={n} in {elapsed_time:.4f} seconds")
 
 
     """
@@ -152,12 +153,14 @@ def getComputationalComplexitySim(n_samples, n_features=[10, 50, 100, 200, 500])
             # store the results
             times[n_samples.index(n), n_features.index(f)] = elapsed_time
 
+            # save the result intermittently incase of crash
+            with open("computational_complexity_sim.pkl", "wb") as f:
+                pkl.dump((n_samples, n_features, times), f)
+
             # print out the result
             print(f"Computed similarity matrix for n={n} and f={f} in {elapsed_time:.4f} seconds")
 
-    # save the results to a file so we can use them later
-    with open("computational_complexity_sim.pkl", "wb") as f:
-        pkl.dump((n_samples, n_features, times), f)
+
 
     """
     # plot the results using seaborn
