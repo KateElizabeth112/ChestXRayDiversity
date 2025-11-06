@@ -1,7 +1,7 @@
 # script to prepare some plots to illustrate computational complexity of the Vendi score as well as the impact of dataset size and average similarity
 import numpy as np
 import matplotlib.pyplot as plt
-#import seaborn as sns
+import seaborn as sns
 import vendiScore
 import time
 import pickle as pkl
@@ -192,7 +192,7 @@ def plotComputationalComplexity():
     fig, axs = plt.subplots(1, 2, figsize=(16, 6))
 
     for i, f in enumerate(n_features_sim):
-        axs[0].plot(n_samples_sim, times_sim[:, i], label=f'f={f}', marker='o')
+        axs[0].plot(n_samples_sim[:len(times_sim[:, i])], times_sim[:, i], label=f'f={f}', marker='o')
     axs[0].set_xlabel('Dataset Size (n)', fontsize=14)
     axs[0].set_ylabel('Computation Time (seconds)', fontsize=14)
     axs[0].set_xscale('log')
@@ -203,7 +203,7 @@ def plotComputationalComplexity():
     sns.set_theme(style="darkgrid")
     sns.set_context("talk")
 
-    axs[1].plot(n_samples_vs, times_vs, marker='o')
+    axs[1].plot(n_samples_vs[:len(times_vs)], times_vs, marker='o')
     axs[1].set_xlabel('Dataset Size (n)', fontsize=14)
     axs[1].set_ylabel('Computation Time (seconds)', fontsize=14)
     axs[1].set_xscale('log')
@@ -224,9 +224,9 @@ def main():
     n_samples = [10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 50000, 100000]
 
     #plotOffDiagonalSimilarity()
-    getComputationalComplexityVS(n_samples)
-    getComputationalComplexitySim(n_samples, n_features=[10, 50, 100, 200, 500])
-    #plotComputationalComplexity()
+    #getComputationalComplexityVS(n_samples)
+    #getComputationalComplexitySim(n_samples, n_features=[10, 50, 100, 200, 500])
+    plotComputationalComplexity()
 
 if __name__ == "__main__":
     main()

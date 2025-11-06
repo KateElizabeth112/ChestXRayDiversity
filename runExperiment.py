@@ -14,7 +14,7 @@ import argparse
 # Set up the argument parser
 parser = argparse.ArgumentParser(description="Calculate the diversity scores for various stratifications from a ChestXRay dataset.")
 parser.add_argument("-d", "--demographic", type=str, help="Demographic to stratify the dataset by", default="Atelectasis")
-parser.add_argument("-v", "--values", type=list, nargs='+', help="Demographic values to stratify the dataset by", default=[1, 0, -1])
+#parser.add_argument("-v", "--values", type=list, nargs='+', help="Demographic values to stratify the dataset by", default=[1, 0, -1])
 parser.add_argument("-n", "--num_samples", type=list, nargs='+', help="Number of samples to use for diversity scoring", default=[50, 100, 200, 500, 1000])
 parser.add_argument("-s", "--num_repeats", type=str, help="Number of repeats to use for diversity scoring", default="3")
 parser.add_argument("-f", "--dataset_name", type=str, help="Name of the dataset to use for diversity scoring", default="CheXpert")
@@ -30,7 +30,13 @@ num_samples = args.num_samples
 #demographic = "Age"
 #values = ["20-30", "30-40", "40-50", "50-60", "60-70", "70-80"]
 demographic = args.demographic
-values = args.values
+
+if demographic == "Age":
+    values = ["20-30", "30-40", "40-50", "50-60", "60-70", "70-80"]
+elif demographic == "Sex":
+    values = ["Male", "Female"]
+
+#values = args.values
 dataset_name = args.dataset_name
 
 
@@ -50,7 +56,7 @@ def runExperiment(num_samples, num_repeats, demographic, values, dataset_name, r
             for i in range(num_repeats):
                 print(f"scoring diversity for {value} {ns} samples, repeat {i}")
 
-                # filter the dataframe  IDs to only include AP scans from females
+                # filter the dataframe  IDs to only include AP scans 
                 condition1 = df["AP/PA"] == "AP"
 
                 # filter the dataframe to only include the demographic value

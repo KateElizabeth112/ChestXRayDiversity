@@ -4,14 +4,39 @@ import pandas as pd
 import os
 
 
-def plotResultsByValue(demographic, values, num_samples, encoder, results_dir):       
+def plotResultsByValue(demographic, values, num_samples, encoder, root_dir, results_filename="results.csv"):     
+    """
+    Plots the results of the diversity scores by demographic value and number of samples.
+    Parameters:
+    demographic (str): The demographic to plot the results for.
+    values (list): The list of values for the demographic.
+    num_samples (list): The list of number of samples to plot the results for.
+    encoder (str): The encoder to use for the results.
+    root_dir (str): The root directory where the results are stored.
+    results_filename (str): The name of the results csv file.
+    """
+    # Check that the root_dir is a string
+    if not isinstance(root_dir, str):
+        print(f"Root directory should be a string, but got {type(root_dir)}")
+        return
+    
+    # Check that the root directory exists
+    if not os.path.exists(root_dir):
+        print(f"Root directory {root_dir} does not exist")
+        return
+    
+    #check that the results_filename is a string
+    if not isinstance(results_filename, str):
+        print(f"Results filename should be a string, but got {type(results_filename)}")
+        return
+    
     # Check that we can find the results directory
-    results_dir = os.path.join(results_dir, "results")
+    results_dir = os.path.join(root_dir, "results")
     if not os.path.exists(results_dir):
         print(f"Results directory {results_dir} does not exist")
     
     # Check that we can find the results csv file
-    results_csv = os.path.join(results_dir, "results.csv")
+    results_csv = os.path.join(results_dir, results_filename)
     if not os.path.exists(results_csv):
         print(f"Results csv file {results_csv} does not exist")
         return
@@ -68,6 +93,15 @@ def plotResultsByValue(demographic, values, num_samples, encoder, results_dir):
 
 
 def plotResultsByDemographic(demographics, value, num_samples, encoder, results_dir):
+    """
+    Plots the results of the diversity scores by demographic=1 and number of samples.
+    Parameters:
+    demographics (list): The list of demographics to plot the results for.
+    value (int): The value of the demographic to plot the results for.
+    num_samples (list): The list of number of samples to plot the results for.
+    encoder (str): The encoder to use for the results.
+    results_dir (str): The directory where the results are stored.
+    """
     # Check that we can find the results directory
     results_dir = os.path.join(results_dir, "results")
     if not os.path.exists(results_dir):
@@ -136,14 +170,19 @@ def plotResultsByDemographic(demographics, value, num_samples, encoder, results_
 def main():
     root_dir = '/Users/katephd/Documents/code/ChestXRayDiversity'
 
-    demographic = "Atelectasis"
-    values = [1, 0, -1]
-    value = 1
+    #demographic = "Atelectasis"
+    #values = [1, 0, -1]
+    #value = 1
     num_samples = [50, 100, 200, 500, 1000]
 
-    demographics = ["Atelectasis", "Cardiomegaly", "Consolidation", "Edema"]
+    demographic = "Sex"
+    values = ["Male", "Female"]
 
-    plotResultsByDemographic(demographics, value, num_samples, "inception", root_dir)
+    #demographics = ["Atelectasis", "Cardiomegaly", "Consolidation", "Edema"]
+
+    #plotResultsByDemographic(demographics, value, num_samples, "inception", root_dir)
+
+    plotResultsByValue(demographic, values, num_samples, "cxrfoundation", root_dir, results_filename="runs_sex.csv")
 
 if __name__ == "__main__":
     main()

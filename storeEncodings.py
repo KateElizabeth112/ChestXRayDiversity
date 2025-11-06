@@ -8,9 +8,9 @@ from cheXpertDataset import CheXpertDataset
 parser = argparse.ArgumentParser(description="Precompute and store SAMMed Encodings for a dataset")
 parser.add_argument("-r", "--root_dir", type=str, help="Root directory where the code and data are located",
                     default="/Users/katephd/Documents")
-parser.add_argument("-s", "--start_idx", type=int, help="Index of the image to start encoding", default=51803)
-parser.add_argument("-e", "--encoder", type=str, choices=["SAMMedEncoder", "CxrFoundationEncoder"],
-                    help="Encoder to use for encoding", default="CxrFoundationEncoder")
+parser.add_argument("-s", "--start_idx", type=int, help="Index of the image to start encoding", default=0)
+parser.add_argument("-e", "--encoder", type=str, choices=["SAMMedEncoder", "CxrFoundationEncoder", "InceptionEncoder"],
+                    help="Encoder to use for encoding", default="InceptionEncoder")
 
 args = parser.parse_args()
 
@@ -37,3 +37,8 @@ elif encoder == "SAMMedEncoder":
 
     encoder = SamMedEncoder(dataset, "CheXpert")
     encoder.encode(start_idx, checkpoint_path)
+
+elif encoder == "InceptionEncoder":
+    from inceptionEncoder import InceptionEncoder
+    encoder = InceptionEncoder(dataset, "CheXpert")
+    encoder.encode(start_idx)
