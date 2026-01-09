@@ -55,13 +55,13 @@ def cosineSimilarity(vectorsA, vectorsB):
     return similarity_matrix
 
 
-def sampleAndComputeVendi(root_dir, number_of_runs, N, n, number_of_reps, dataset_name):
+def sampleAndComputeVendi(data_dir, number_of_runs, N, n, number_of_reps, dataset_name):
     # load the data and sample the full dataset
     # load the data
-    dataset = CheXpertDataset(os.path.join(root_dir, "CheXpertSmall"), split='train', transform=transforms.ToTensor())
+    dataset = CheXpertDataset(os.path.join(data_dir, "CheXpertSmall"), split='train', transform=transforms.ToTensor())
 
     # open the train reduced csv file
-    train_reduced_csv = os.path.join(root_dir, 'CheXpertSmall', 'train_reduced.csv')
+    train_reduced_csv = os.path.join(data_dir, 'CheXpertSmall', 'train_reduced.csv')
     df = pd.read_csv(train_reduced_csv)
 
     # filter the dataframe  IDs to only include AP scans 
@@ -164,7 +164,10 @@ def plotResults():
 
 
 def main(): 
-    sampleAndComputeVendi(data_dir, number_of_runs, N, n, number_of_reps, dataset_name)
+
+    for n in [10, 50, 100, 200]:
+        for N in [1000, 2000, 5000, 10000]:
+            sampleAndComputeVendi(data_dir, number_of_runs, N, n, number_of_reps, dataset_name)
     #plotResults()
 
 
