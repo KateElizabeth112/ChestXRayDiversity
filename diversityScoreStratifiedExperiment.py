@@ -1,4 +1,6 @@
-# A scratch file to test diversity scoring of the CheXpert dataset
+# A script to run diversity scoring experiments on ChestXRay datasets
+# Random data sampling from different demographic stratifications
+# and logging results to MLflow
 import matplotlib.pyplot as plt
 import torchvision.transforms as transforms
 from diversityScore import DiversityScore
@@ -14,7 +16,6 @@ import argparse
 # Set up the argument parser
 parser = argparse.ArgumentParser(description="Calculate the diversity scores for various stratifications from a ChestXRay dataset.")
 parser.add_argument("-d", "--demographic", type=str, help="Demographic to stratify the dataset by", default="Atelectasis")
-#parser.add_argument("-v", "--values", type=list, nargs='+', help="Demographic values to stratify the dataset by", default=[1, 0, -1])
 parser.add_argument("-n", "--num_samples", type=list, nargs='+', help="Number of samples to use for diversity scoring", default=[50, 100, 200, 500, 1000])
 parser.add_argument("-s", "--num_repeats", type=str, help="Number of repeats to use for diversity scoring", default="3")
 parser.add_argument("-f", "--dataset_name", type=str, help="Name of the dataset to use for diversity scoring", default="CheXpert")
@@ -25,10 +26,6 @@ args = parser.parse_args()
 
 num_repeats = int(args.num_repeats)
 num_samples = args.num_samples
-#demographic = "Sex"
-#values = ["Male", "Female"]
-#demographic = "Age"
-#values = ["20-30", "30-40", "40-50", "50-60", "60-70", "70-80"]
 demographic = args.demographic
 
 if demographic == "Age":
@@ -36,21 +33,31 @@ if demographic == "Age":
 elif demographic == "Sex":
     values = ["Male", "Female"]
 
-#values = args.values
+
 dataset_name = args.dataset_name
 
 
 def runExperiment(num_samples, num_repeats, demographic, values, dataset_name, root_dir):
+    """ Run the diversity scoring experiment for the given demographic stratifications
+    and number of samples. Log the results to MLflow.
+    Args:
+        num_samples (list): List of number of samples to use for diversity scoring in this experiment
+        num_repeats (int): Number of repeats to use for diversity scoring. An average score will be calculated over the repeats.
+        demographic (str): Demographic to stratify the dataset by
+        values (list): List of demographic values to stratify the dataset by
+        dataset_name (str): Name of the dataset to use for diversity scoring
+        root_dir (str): Root directory where the code and data are located
+    """
 
+    # load the CheXpert dataset and assocoiated dataset information csv
     if dataset_name == "CheXpert":
         dataset = CheXpertDataset(os.path.join(root_dir, "CheXpertSmall"), split='train', transform=transforms.ToTensor())
-
-        # open the train reduced csv file
         train_reduced_csv = os.path.join(root_dir, 'CheXpertSmall', 'train_reduced.csv')
         df = pd.read_csv(train_reduced_csv)
     else:
         raise ValueError("Dataset not supported")
     
+    # loop over the demographic values and number of samples
     for value in values:
         for ns in num_samples:
             for i in range(num_repeats):
@@ -190,47 +197,6 @@ def runExperiment(num_samples, num_repeats, demographic, values, dataset_name, r
                 mlflow.log_metric("vs_sammed", scores["vs_sammed"])
                 mlflow.log_metric("vs_cxrfoundation", scores["vs_cxrfoundation"])
 
-
-def plotResults(values, num_samples, encoder, results_dir):       
-    # Now we can plot the re1sults
-    plt.clf()
-
-    # generate a color map
-    colors = plt.cm.viridis(np.linspace(0, 1, len(values) + 1))
-
-    # load the results
-    for value, i in zip(values, range(len(values))):
-        # load the results for each demographic value
-        f = open(os.path.join(results_dir, f"results_{value}.pkl"), "rb")
-        results = pkl.load(f)
-        f.close()
-
-        # calculate the average and standard deviation of the scores
-        av_scores = np.mean(results[f"vendi_scores_{encoder}"], axis=1)
-        std_scores = np.std(results[f"vendi_scores_{encoder}"], axis=1)
-
-        # plot the results
-        plt.plot(num_samples, av_scores, color=colors[i], label=value)
-        plt.fill_between(num_samples, av_scores + std_scores, av_scores - std_scores, color=colors[i], alpha=0.2)
-
-
-    f = open(os.path.join(results_dir, f"results_mixed.pkl"), "rb")
-    results_mixed = pkl.load(f)
-    f.close()
-    
-    # calculate the average and standard deviation of the scores
-    av_scores_mixed = np.mean(results_mixed[f"vendi_scores_{encoder}"], axis=1)
-    std_scores_mixed = np.std(results_mixed[f"vendi_scores_{encoder}"], axis=1)
-
-    # plot the results
-    plt.plot(num_samples, av_scores_mixed, color=colors[i+1], label="Mixed")
-    plt.fill_between(num_samples, av_scores_mixed + std_scores_mixed, av_scores_mixed - std_scores_mixed, color=colors[i+1], alpha=0.2)
-
-    plt.legend()
-    plt.xlabel("Number of samples")
-    plt.ylabel("Diversity score")
-    plt.title(f"{encoder} diversity score")
-    plt.show()
 
 def main():
     root_dir = '/Users/katephd/Documents/data/'
