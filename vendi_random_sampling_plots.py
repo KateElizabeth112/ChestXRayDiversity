@@ -16,6 +16,9 @@ ds_size = [1000, 2000, 5000, 10000]
 # 4. the MSE between the corrected subset scores and the full dataset scores
 # 5. the average time saved by using random sampling
 
+# set up path to results
+results_dir = os.path.join("results", "random_sampling")
+
 # create some storage variables for the results
 mse_results = np.zeros((len(ds_size), len(num_samples)))
 correlation_results = np.zeros((len(ds_size), len(num_samples)))
@@ -25,7 +28,7 @@ time_saved = np.zeros((len(ds_size), len(num_samples)))
 for n in num_samples:
     for N in ds_size:
         # load the results
-        with open(f"vendi_random_sampling_{N}_{n}.pkl", "rb") as f:
+        with open(os.path.join(results_dir, f"vendi_random_sampling_{N}_{n}.pkl"), "rb") as f:
             results = pkl.load(f)
 
         vs_full = results["vs_full"]

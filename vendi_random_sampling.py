@@ -17,8 +17,8 @@ import argparse
 # Set up the argument parser
 parser = argparse.ArgumentParser(description="Calculate the diversity scores for various stratifications from a ChestXRay dataset.")
 parser.add_argument("-dn", "--dataset_name", type=str, help="Name of the dataset to use for diversity scoring", default="CheXpert")
-parser.add_argument("-dd", "--data_dir", type=str, help="Root directory where the data is located",
-                    default="/Users/katephd/Documents/data")
+parser.add_argument("-rd", "--root_dir", type=str, help="Root directory where the data and code is located",
+                    default="/Users/katephd/Documents")
 parser.add_argument("-N", "--dataset_size", type=int, help="Number of samples to draw for full dataset", default=1000)
 parser.add_argument("-n", "--num_samples", type=int, help="Number of samples to draw for random sampling", default=50)
 parser.add_argument("-R", "--num_repeats", type=int, help="Number of repetitions for random sampling", default=100)
@@ -26,13 +26,16 @@ parser.add_argument("-Rr", "--num_runs", type=int, help="Number of random sampli
 
 args = parser.parse_args()
 
-data_dir = args.data_dir
+root_dir = args.root_dir
 dataset_name = args.dataset_name
 N = int(args.dataset_size)  # number of samples to draw for full dataset
 n = int(args.num_samples) # number of samples to draw for random sampling
 number_of_runs = int(args.num_runs) # number of random sampling runs
 number_of_reps = int(args.num_repeats)  # number of repetitions for random sampling
 
+# set up data and results paths
+data_dir = os.path.join(root_dir, "data")
+results_dir = os.path.join(root_dir, "code", "ChestXRayDiversity", "results", "random_sampling")
 
 def cosineSimilarity(vectorsA, vectorsB):
     """
