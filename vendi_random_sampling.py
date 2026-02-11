@@ -66,8 +66,7 @@ def sampleAndComputeVendi(data_dir, number_of_runs, N, n, number_of_reps, datase
     train_reduced_csv = os.path.join(data_dir, 'CheXpertSmall', 'train_reduced.csv')
     df = pd.read_csv(train_reduced_csv)
 
-    # filter the dataframe  IDs to only include AP scans 
-    #condition1 = df["AP/PA"] == "AP"
+    # get the image IDs from the dataframe so we can sample from them
     image_ids = df["image_id"].values
 
     # prepare containers to store the results
@@ -75,10 +74,14 @@ def sampleAndComputeVendi(data_dir, number_of_runs, N, n, number_of_reps, datase
     time_full = np.zeros((number_of_runs,))
     vs_sub = np.zeros((number_of_runs, number_of_reps))
     time_sub = np.zeros((number_of_runs,))
+    sampled_ids = []
 
     for i in range(number_of_runs):
         idx = np.random.choice(range(image_ids.shape[0]), N, replace=False)
         ids = image_ids[idx].astype(int)
+
+        # save the sampled IDs for this run
+        sampled_ids.append(ids)
 
         # get the embeddings for the sampled IDs
         encoder = InceptionEncoder(dataset, "CheXpert")
@@ -117,8 +120,8 @@ def sampleAndComputeVendi(data_dir, number_of_runs, N, n, number_of_reps, datase
         print(f"Subset Vendi score (mean over {number_of_reps} reps): {np.mean(vs_sub[i]):.4f} (time: {time_sub[i]:.4f} seconds)")
 
         # save the results
-        with open(os.path.join(results_dir, f"vendi_random_sampling_{N}_{n}.pkl"), "wb") as f:
-            pkl.dump({"vs_full": vs_full, "vs_sub": vs_sub, "time_full": time_full, "time_sub": time_sub}, f)
+        with open(os.path.join(results_dir, f"stochastic_vendi_{N}_{n}.pkl"), "wb") as f:
+            pkl.dump({"vs_full": vs_full, "vs_sub": vs_sub, "time_full": time_full, "time_sub": time_sub, "sampled_ids": sampled_ids}, f)
 
 
 def main(): 
