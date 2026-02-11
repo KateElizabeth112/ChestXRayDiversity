@@ -85,18 +85,25 @@ def sampleAndComputeVendi(data_dir, number_of_runs, N, n, number_of_reps, datase
 
         # get the embeddings for the sampled IDs
         encoder = InceptionEncoder(dataset, "CheXpert")
-        start_time = time.time()
-        vectors = encoder.retrieve(ids, os.path.join("InceptionEncodings", f"{dataset_name}"))
+        
+        
 
-        # calculate Vendi score for full dataset and time the operation 
-        similarity_matrix = cosineSimilarity(vectors, vectors)
+        # if N <=10,000 calculate Vendi score for full dataset and time the operation 
+        if N <= 10000:
+            vectors = encoder.retrieve(ids, os.path.join("InceptionEncodings", f"{dataset_name}"))
+            start_time = time.time()
+            similarity_matrix = cosineSimilarity(vectors, vectors)
 
-        score = vendiScore.score_K(similarity_matrix)
-        end_time = time.time()
+            score = vendiScore.score_K(similarity_matrix)
+            end_time = time.time()
 
-        # store the results
-        vs_full[i] = score
-        time_full[i] = end_time - start_time
+            # store the results
+            vs_full[i] = score
+            time_full[i] = end_time - start_time
+        else:
+            print(f"Skipping full Vendi score calculation for N={N} due to computational constraints.")
+            vs_full[i] = np.nan
+            time_full[i] = np.nan
 
         # now do random sampling of the ids
         start_time = time.time()
@@ -126,9 +133,12 @@ def sampleAndComputeVendi(data_dir, number_of_runs, N, n, number_of_reps, datase
 
 def main(): 
 
-    for n in [10, 50, 100, 200]:
-        for N in [1000, 2000, 5000, 10000]:
-            sampleAndComputeVendi(data_dir, number_of_runs, N, n, number_of_reps, dataset_name)
+    #for n in [10, 50, 100, 200]:
+    n = 100
+    number_of_runs = 10
+    
+    for N in [1000, 2000, 5000, 10000, 20000, 50000]:
+        sampleAndComputeVendi(data_dir, number_of_runs, N, n, number_of_reps, dataset_name)
 
 
 
