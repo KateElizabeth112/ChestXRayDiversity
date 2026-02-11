@@ -15,9 +15,9 @@ import argparse
 
 # Set up the argument parser
 parser = argparse.ArgumentParser(description="Calculate the diversity scores for various stratifications from a ChestXRay dataset.")
-parser.add_argument("-d", "--demographic", type=str, help="Demographic to stratify the dataset by", default="Atelectasis")
+parser.add_argument("-d", "--demographic", type=str, help="Demographic to stratify the dataset by", default='Support Devices')
 parser.add_argument("-n", "--num_samples", type=list, nargs='+', help="Number of samples to use for diversity scoring", default=[50, 100, 200, 500, 1000])
-parser.add_argument("-s", "--num_repeats", type=str, help="Number of repeats to use for diversity scoring", default="3")
+parser.add_argument("-s", "--num_repeats", type=str, help="Number of repeats to use for diversity scoring", default="15")
 parser.add_argument("-f", "--dataset_name", type=str, help="Name of the dataset to use for diversity scoring", default="CheXpert")
 parser.add_argument("-r", "--root_dir", type=str, help="Root directory where the code and data are located",
                     default="/Users/katecevora/Documents/PhD")
@@ -29,9 +29,16 @@ num_samples = args.num_samples
 demographic = args.demographic
 
 if demographic == "Age":
-    values = ["20-30", "30-40", "40-50", "50-60", "60-70", "70-80"]
+    values = ['19-39', '40-59', '60-79', '80-100']
 elif demographic == "Sex":
     values = ["Male", "Female"]
+elif demographic == "AP/PA":
+    values = ["AP", "PA"]
+elif demographic in ['No Finding', 'Enlarged Cardiomediastinum', 'Cardiomegaly', 'Lung Opacity', 
+                    'Lung Lesion', 'Edema', 'Consolidation', 'Pneumonia', 'Atelectasis', 
+                    'Pneumothorax', 'Pleural Effusion', 'Pleural Other', 'Fracture', 
+                    'Support Devices']:
+    values = [1]
 
 
 dataset_name = args.dataset_name
@@ -51,6 +58,7 @@ def runExperiment(num_samples, num_repeats, demographic, values, dataset_name, r
 
     # load the CheXpert dataset and assocoiated dataset information csv
     if dataset_name == "CheXpert":
+        print("Loading CheXpert dataset")
         dataset = CheXpertDataset(os.path.join(root_dir, "CheXpertSmall"), split='train', transform=transforms.ToTensor())
         train_reduced_csv = os.path.join(root_dir, 'CheXpertSmall', 'train_reduced.csv')
         df = pd.read_csv(train_reduced_csv)
@@ -63,18 +71,14 @@ def runExperiment(num_samples, num_repeats, demographic, values, dataset_name, r
             for i in range(num_repeats):
                 print(f"scoring diversity for {value} {ns} samples, repeat {i}")
 
-                # filter the dataframe  IDs to only include AP scans 
-                condition1 = df["AP/PA"] == "AP"
-
                 # filter the dataframe to only include the demographic value
                 if demographic == "Age":
                     lower, upper = map(int, value.split('-'))
-                    condition2 = df[demographic] >= lower 
-                    condition3 = df[demographic] < upper
-                    image_ids = df[condition1 & condition2 & condition3]["image_id"].values
-                else:
-                    condition2 = df[demographic] == value
+                    condition1 = df[demographic] >= lower 
+                    condition2 = df[demographic] < upper
                     image_ids = df[condition1 & condition2]["image_id"].values
+                else:
+                    image_ids = df[df[demographic] == value]["image_id"].values
 
                 # check if the number of samples is greater than the number of image IDs
                 # if not, fill diversitys scores with Nan
@@ -119,7 +123,8 @@ def runExperiment(num_samples, num_repeats, demographic, values, dataset_name, r
 
     # create a flag that will be set when we can no longer run experiments
     SKIP_FLAG = False
-    
+
+    # complete the mixed value diversity scoring experiment
     for ns in num_samples:
         if SKIP_FLAG:
             print("Skipping {} samples".format(ns))
@@ -146,17 +151,13 @@ def runExperiment(num_samples, num_repeats, demographic, values, dataset_name, r
                     print("Skipping {} value".format(value))
                     break
 
-                # filter the dataframe  IDs to only include AP scans from females
-                condition1 = df["AP/PA"] == "AP"
-
                 if demographic == "Age":
                     lower, upper = map(int, value.split('-'))
-                    condition2 = df[demographic] >= lower 
-                    condition3 = df[demographic] < upper
-                    image_ids = df[condition1 & condition2 & condition3]["image_id"].values
-                else:
-                    condition2 = df[demographic] == value
+                    condition1 = df[demographic] >= lower 
+                    condition2 = df[demographic] < upper
                     image_ids = df[condition1 & condition2]["image_id"].values
+                else:
+                    image_ids = df[df[demographic] == value]["image_id"].values
 
                 # check if the number of samples is greater than the number of image IDs
                 if ns_per_value > image_ids.shape[0]:
@@ -209,9 +210,6 @@ def main():
     # run the experiment
     runExperiment(num_samples, num_repeats, demographic, values, dataset_name, root_dir)
 
-    # plot the results
-    #plotResults(values, num_samples, "inception", ".")
-    #plotResults(values, num_samples, "sammed", ".")
 
 
 if __name__ == "__main__":

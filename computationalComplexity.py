@@ -181,35 +181,39 @@ def getComputationalComplexitySim(n_samples, n_features=[10, 50, 100, 200, 500])
     """
     
 def plotComputationalComplexity():
-    # function to plot the computational complexity results from getComputationalComplexitySim and getComputationalComplexityVS as adjacent subplots
+    # function to plot the computational complexity results from getComputationalComplexitySim and getComputationalComplexityVS as separate
     # load the results from the files
-    with open("computational_complexity_vs.pkl", "rb") as f:
+    with open("results/computational_complexity/computational_complexity_vs.pkl", "rb") as f:
         n_samples_vs, times_vs = pkl.load(f)
-    with open("computational_complexity_sim.pkl", "rb") as f:
+    with open("results/computational_complexity/computational_complexity_sim.pkl", "rb") as f:
         n_samples_sim, n_features_sim, times_sim = pkl.load(f)
+
+    smallsmallfont=14
+    smallfont=18
+    bigfont=20
 
     # create the subplots using seaborn 
     fig, axs = plt.subplots(1, 2, figsize=(16, 6))
 
     for i, f in enumerate(n_features_sim):
         axs[0].plot(n_samples_sim[:len(times_sim[:, i])], times_sim[:, i], label=f'f={f}', marker='o')
-    axs[0].set_xlabel('Dataset Size (n)', fontsize=14)
-    axs[0].set_ylabel('Computation Time (seconds)', fontsize=14)
+    axs[0].set_xlabel('Dataset Size (N)', fontsize=smallfont)
+    axs[0].set_ylabel('Computation Time (seconds)', fontsize=smallfont)
     axs[0].set_xscale('log')
     axs[0].set_yscale('log')
-    axs[0].legend(fontsize=12)
+    axs[0].legend(fontsize=smallsmallfont)
     axs[0].grid()  
-    axs[0].set_title('Cosine Similarity', fontsize=16)     
+    axs[0].set_title('Kernel Similarity Matrix', fontsize=bigfont)     
     sns.set_theme(style="darkgrid")
     sns.set_context("talk")
 
     axs[1].plot(n_samples_vs[:len(times_vs)], times_vs, marker='o')
-    axs[1].set_xlabel('Dataset Size (n)', fontsize=14)
-    axs[1].set_ylabel('Computation Time (seconds)', fontsize=14)
+    axs[1].set_xlabel('Dataset Size (N)', fontsize=smallfont)
+    #axs[1].set_ylabel('Computation Time (seconds)', fontsize=smallfont)
     axs[1].set_xscale('log')
     axs[1].set_yscale('log')
     axs[1].grid()  
-    axs[1].set_title('Vendi Score', fontsize=16)
+    axs[1].set_title('Eigenvalue Decomposition', fontsize=bigfont)
     sns.set_theme(style="darkgrid")
     sns.set_context("talk")
 

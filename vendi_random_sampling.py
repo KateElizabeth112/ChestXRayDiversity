@@ -60,7 +60,6 @@ def cosineSimilarity(vectorsA, vectorsB):
 
 def sampleAndComputeVendi(data_dir, number_of_runs, N, n, number_of_reps, dataset_name):
     # load the data and sample the full dataset
-    # load the data
     dataset = CheXpertDataset(os.path.join(data_dir, "CheXpertSmall"), split='train', transform=transforms.ToTensor())
 
     # open the train reduced csv file
@@ -68,8 +67,8 @@ def sampleAndComputeVendi(data_dir, number_of_runs, N, n, number_of_reps, datase
     df = pd.read_csv(train_reduced_csv)
 
     # filter the dataframe  IDs to only include AP scans 
-    condition1 = df["AP/PA"] == "AP"
-    image_ids = df[condition1]["image_id"].values
+    #condition1 = df["AP/PA"] == "AP"
+    image_ids = df["image_id"].values
 
     # prepare containers to store the results
     vs_full = np.zeros((number_of_runs,))
@@ -118,52 +117,8 @@ def sampleAndComputeVendi(data_dir, number_of_runs, N, n, number_of_reps, datase
         print(f"Subset Vendi score (mean over {number_of_reps} reps): {np.mean(vs_sub[i]):.4f} (time: {time_sub[i]:.4f} seconds)")
 
         # save the results
-        with open(f"vendi_random_sampling_{N}_{n}.pkl", "wb") as f:
+        with open(os.path.join(results_dir, f"vendi_random_sampling_{N}_{n}.pkl"), "wb") as f:
             pkl.dump({"vs_full": vs_full, "vs_sub": vs_sub, "time_full": time_full, "time_sub": time_sub}, f)
-
-
-def plotResults():
-    # load the results
-    with open("vendi_random_sampling_results.pkl", "rb") as f:
-        results = pkl.load(f)
-
-    vs_full = results["vs_full"]
-    vs_sub = results["vs_sub"]
-
-    # calculate the average and std of the subset scores
-    vs_sub_mean = np.mean(vs_sub, axis=1)
-    vs_sub_std = np.std(vs_sub, axis=1)
-
-    # calculate the correlation between full and subset scores
-    correlation = np.corrcoef(vs_full, vs_sub_mean)[0, 1]
-    print(f"Correlation between full and subset Vendi scores: {correlation:.4f}")
-    
-    # plot the results as a scatter plot with error bars
-    # left plot: full vs subset Vendi scores (without errror bars)
-    # right plot: scatter plot of full Vendi scores vs variance of subset Vendi scores
-    import matplotlib.pyplot as plt
-    plt.figure(figsize=(12, 6))
-    plt.subplot(1, 2, 1)
-    #plt.errorbar(vs_full, vs_sub_mean, yerr=vs_sub_std, fmt='o', ecolor='lightgray', elinewidth=3, capsize=0)
-    plt.scatter(vs_full, vs_sub_mean)
-    plt.xlabel("Full Vendi Score", fontsize=14)
-    plt.ylabel("Subset Vendi Score", fontsize=14)
-    plt.title("Full vs Subset Vendi Scores", fontsize=16)
-    plt.xticks(fontsize=12)
-    plt.yticks(fontsize=12)
-    plt.grid()
-
-    plt.subplot(1, 2, 2)
-    plt.scatter(vs_full, vs_sub_std)
-    plt.xlabel("Full Vendi Score", fontsize=14)
-    plt.ylabel("Subset Vendi Score Std Dev", fontsize=14)
-    plt.title("Full Vendi Score vs Subset Score Variance", fontsize=16)
-    plt.xticks(fontsize=12)
-    plt.yticks(fontsize=12)
-    plt.grid()
-    plt.tight_layout()
-    plt.show()
-    
 
 
 def main(): 
@@ -171,7 +126,6 @@ def main():
     for n in [10, 50, 100, 200]:
         for N in [1000, 2000, 5000, 10000]:
             sampleAndComputeVendi(data_dir, number_of_runs, N, n, number_of_reps, dataset_name)
-    #plotResults()
 
 
 

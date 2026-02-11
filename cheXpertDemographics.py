@@ -10,6 +10,11 @@ root_dir = '/Users/katephd/Documents/data/CheXpertSmall'
 reduced_csv = os.path.join(root_dir, 'train_reduced.csv')
 plot_dir = os.path.join(root_dir, 'dataset_demographics')
 
+disease_cols = ['No Finding', 'Enlarged Cardiomediastinum', 'Cardiomegaly', 'Lung Opacity', 
+                'Lung Lesion', 'Edema', 'Consolidation', 'Pneumonia', 'Atelectasis', 
+                'Pneumothorax', 'Pleural Effusion', 'Pleural Other', 'Fracture', 
+                'Support Devices']
+
 def printBasicStatistics(save_plots=False):
     # load the reduced csv file
     df = pd.read_csv(reduced_csv)
@@ -30,6 +35,20 @@ def printBasicStatistics(save_plots=False):
     sex_counts = df['Sex'].value_counts()
     print("\nSex Counts:")
     print(sex_counts)
+
+    # print the number of positive findings for each disease type
+    print("\nDisease Positive Findings Counts:")
+    for col in disease_cols:
+        positive_count = df[col].value_counts().get(1, 0)
+        print(f"{col}: {positive_count}")
+
+    # print the number of patients in each age group
+    bins = [19, 40, 60, 80, 100]
+    labels = ['19-39', '40-59', '60-79', '80+']
+    df['AgeGroup'] = pd.cut(df['Age'], bins=bins, labels=labels, right=False)
+    agegroup_counts = df['AgeGroup'].value_counts().sort_index()
+    print("\nAge Group Counts:")
+    print(agegroup_counts)
 
 
 def ageDistributionPlot(save_plots=False):
@@ -73,10 +92,6 @@ def ageDistributionPlot(save_plots=False):
     # plot the counts in each age category split by disease types marked as a positive finding 1 in a single plot
     # the bars should be next to eachother for each disease type and not overlapping
     # use seaborn catplot
-    disease_cols = ['No Finding', 'Enlarged Cardiomediastinum', 'Cardiomegaly', 'Lung Opacity', 
-                    'Lung Lesion', 'Edema', 'Consolidation', 'Pneumonia', 'Atelectasis', 
-                    'Pneumothorax', 'Pleural Effusion', 'Pleural Other', 'Fracture', 
-                    'Support Devices']
     df_melted = df.melt(id_vars=['AgeGroup'], value_vars=disease_cols, var_name='Disease', value_name='Presence')
     df_positive = df_melted[df_melted['Presence'] == 1]
     plt.clf()
@@ -103,10 +118,6 @@ def diseaseDistributionPlot(save_plots=False):
     # remove the sex unknown entries
     df = df[df['Sex'].isin(['Male', 'Female'])] 
 
-    disease_cols = ['No Finding', 'Enlarged Cardiomediastinum', 'Cardiomegaly', 'Lung Opacity', 
-                    'Lung Lesion', 'Edema', 'Consolidation', 'Pneumonia', 'Atelectasis', 
-                    'Pneumothorax', 'Pleural Effusion', 'Pleural Other', 'Fracture', 
-                    'Support Devices']
     disease_counts = {}
     for col in disease_cols:
         disease_counts[col] = df[col].value_counts().get(1, 0)  # count only positive cases
@@ -170,9 +181,9 @@ def diseaseDistributionPlot(save_plots=False):
                     
 
 def main():
-    diseaseDistributionPlot(save_plots=True)
-    #printBasicStatistics()
-    ageDistributionPlot(save_plots=True)
+    #diseaseDistributionPlot(save_plots=True)
+    printBasicStatistics()
+    #ageDistributionPlot(save_plots=True)
 
 
 if __name__ == "__main__":
