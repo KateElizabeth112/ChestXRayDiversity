@@ -58,7 +58,7 @@ def cosineSimilarity(vectorsA, vectorsB):
     return similarity_matrix
 
 
-def sampleAndComputeVendi(data_dir, number_of_runs, N, n, number_of_reps, dataset_name):
+def sampleAndComputeVendi(data_dir, number_of_runs, N, n, number_of_reps, dataset_name, save=True):
     # load the data and sample the full dataset
     dataset = CheXpertDataset(os.path.join(data_dir, "CheXpertSmall"), split='train', transform=transforms.ToTensor())
 
@@ -77,19 +77,22 @@ def sampleAndComputeVendi(data_dir, number_of_runs, N, n, number_of_reps, datase
     sampled_ids = []
 
     for i in range(number_of_runs):
+        print(f"Starting run {i} of {number_of_runs} for N={N} and n={n}")
+
         idx = np.random.choice(range(image_ids.shape[0]), N, replace=False)
         ids = image_ids[idx].astype(int)
 
-        # save the sampled IDs for this run
+        # Check IDs are sampled correctly
+        print(f"Sampled {ids.shape[0]} IDs for run {i}.")
+
+        # save the sampled IDs for this run so we can use them later when we calculate FKEA Vendi scores
         sampled_ids.append(ids)
 
-        # get the embeddings for the sampled IDs
+        # initia=lize the encoder with the dataset and the name of the dataset (for loading the correct encodings)
         encoder = InceptionEncoder(dataset, "CheXpert")
-        
-        
 
         # if N <=10,000 calculate Vendi score for full dataset and time the operation 
-        if N <= 10000:
+        if N <= 18000:
             vectors = encoder.retrieve(ids, os.path.join("InceptionEncodings", f"{dataset_name}"))
             start_time = time.time()
             similarity_matrix = cosineSimilarity(vectors, vectors)
@@ -105,7 +108,7 @@ def sampleAndComputeVendi(data_dir, number_of_runs, N, n, number_of_reps, datase
             vs_full[i] = np.nan
             time_full[i] = np.nan
 
-        # now do random sampling of the ids
+        # now do random sampling of the ids for stochastic Vendi score calculation and time the operation
         start_time = time.time()
         for j in range(number_of_reps):
             idx_sub = np.random.choice(ids, n, replace=False)
@@ -127,18 +130,21 @@ def sampleAndComputeVendi(data_dir, number_of_runs, N, n, number_of_reps, datase
         print(f"Subset Vendi score (mean over {number_of_reps} reps): {np.mean(vs_sub[i]):.4f} (time: {time_sub[i]:.4f} seconds)")
 
         # save the results
-        with open(os.path.join(results_dir, f"stochastic_vendi_{N}_{n}.pkl"), "wb") as f:
-            pkl.dump({"vs_full": vs_full, "vs_sub": vs_sub, "time_full": time_full, "time_sub": time_sub, "sampled_ids": sampled_ids}, f)
+        if save:
+            with open(os.path.join(results_dir, f"stochastic_vendi_{N}_{n}.pkl"), "wb") as f:
+                pkl.dump({"vs_full": vs_full, "vs_sub": vs_sub, "time_full": time_full, "time_sub": time_sub, "sampled_ids": sampled_ids}, f)
 
 
 def main(): 
 
     #for n in [10, 50, 100, 200]:
-    n = 100
-    number_of_runs = 10
-    
-    for N in [1000, 2000, 5000, 10000, 20000, 50000]:
-        sampleAndComputeVendi(data_dir, number_of_runs, N, n, number_of_reps, dataset_name)
+    number_of_runs = 100
+    n=100
+
+    #for N in [1000, 2000, 5000, 10000]:
+    #    sampleAndComputeVendi(data_dir, number_of_runs, N, n, number_of_reps, dataset_name, save=False)
+
+    sampleAndComputeVendi(data_dir, number_of_runs, 50000, n, number_of_reps, dataset_name, save=True)
 
 
 
