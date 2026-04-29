@@ -1,210 +1,309 @@
-# plotting functions for random sampling Vendi experiments
+# printig and plotting functions for stochastic Vendi experiments
 import numpy as np
 import pickle as pkl
 import seaborn as sns
 import matplotlib.pyplot as plt
 import os
-
-
-num_samples = [10, 50, 100, 200]
-ds_size = [1000, 2000, 5000, 10000]
-
-# loop over the results and calculate: 
-# 1. the average and std of the samples scores for each run
-# 2. the correlation between full dataset Vendi score and the mean of the subset scores
-# 3. the correction factor to transform the line of best fit to y=x
-# 4. the MSE between the corrected subset scores and the full dataset scores
-# 5. the average time saved by using random sampling
+import scipy.stats
 
 # set up path to results
 results_dir = os.path.join("results", "random_sampling")
 
-def plotRandomSamplingResults():
-    # create some storage variables for the results
-    mse_results = np.zeros((len(ds_size), len(num_samples)))
-    correlation_results = np.zeros((len(ds_size), len(num_samples)))
-    correction_factors = np.zeros((len(ds_size), len(num_samples)))
-    time_saved = np.zeros((len(ds_size), len(num_samples)))
+# define the plot colours
+lblu = "#4878d0"
+lred = "#d65f5f"
 
-    for n in num_samples:
-        for N in ds_size:
-            # load the results
-            with open(os.path.join(results_dir, f"vendi_random_sampling_{N}_{n}.pkl"), "rb") as f:
-                results = pkl.load(f)
+def processResults(dataset_sizes, sample_size):
+     # Calculate the correlation between the stochastic Vendi scores and the true Vendi scores
+    stochasticVSTimeMean = []
+    fkeaVSTimeMean = []
+    trueVSTimeMean = []
 
-            vs_full = results["vs_full"]
-            vs_sub = results["vs_sub"]
+    stochasticVSTimeStd = []
+    fkeaVSTimeStd = []
+    trueVSTimeStd = []
 
-            # calculate the average and std of the subset scores
-            vs_sub_mean = np.mean(vs_sub, axis=1)
-            vs_sub_std = np.std(vs_sub, axis=1)
+    mseStochastic = []
+    mseStochastic_corrected = []
+    mseFKEA = []
 
-            # calculate the correlation between full and subset scores
-            correlation = np.corrcoef(vs_full, vs_sub_mean)[0, 1]
-            print(f"N={N}, n={n}: Correlation between full and subset Vendi scores: {correlation:.4f}")
+    pearsonStochastic = []
+    pearsonFKEA = []
 
-            # calculate the correction factor to transform the line of best fit to y=x
-            A = np.vstack([vs_sub_mean, np.ones(len(vs_sub_mean))]).T
-            m, c = np.linalg.lstsq(A, vs_full, rcond=None)[0]
-            correction_factor = m
-            print(f"N={N}, n={n}: Correction factor: {correction_factor:.4f}")
+    spearmanStochastic = []
+    spearmanPStochastic = []
+    spearmanFKEA = []
+    spearmanPFKEA = []
 
-            # calculate the MSE between the corrected subset scores and the full dataset scores
-            vs_sub_corrected = vs_sub_mean * correction_factor
-            mse = np.mean((vs_full - vs_sub_corrected) ** 2)
-            print(f"N={N}, n={n}: MSE between corrected subset scores and full dataset scores: {mse:.6f}")
+    kendallStochastic = []
+    kendallPStochastic = []
+    kendallFKEA = []
+    kendallPFKEA = []
 
-            # calculate the average time saved by using random sampling
-            time_full = results["time_full"]
-            time_sub = results["time_sub"]
-            avg_time_full = np.mean(time_full)
-            avg_time_sub = np.mean(time_sub)
-            time_saved_value = avg_time_full - avg_time_sub
-            print(f"N={N}, n={n}: Average time saved by using random sampling: {time_saved_value:.4f} seconds")
-
-            # store the results
-            mse_results[ds_size.index(N), num_samples.index(n)] = mse
-            correlation_results[ds_size.index(N), num_samples.index(n)] = correlation
-            correction_factors[ds_size.index(N), num_samples.index(n)] = correction_factor
-            time_saved[ds_size.index(N), num_samples.index(n)] = time_saved_value
+    vsFKEA = []
+    vsStochastic = []
+    vsTrue = []
 
 
-    # plot the results using seaborn
-    # first plot the correlation against number of samples for different dataset sizes
-    plt.figure(figsize=(8, 6))
-    for i, N in enumerate(ds_size):
-        sns.lineplot(x=num_samples, y=correlation_results[i, :], label=f"N={N}", marker='o')
-    plt.xlabel("Number of samples (n)", fontsize=14)
-    plt.ylabel("Correlation coefficient", fontsize=14)
-    plt.title("Correlation between full and subset Vendi scores", fontsize=16)
-    plt.xticks(fontsize=12)
-    plt.yticks(fontsize=12)
-    plt.ylim(0, 1)
-    plt.grid()
-    plt.show()  
+    n = sample_size
 
-    # now plot the MSE against number of samples for different dataset sizes
-    plt.figure(figsize=(8, 6))
-    for i, N in enumerate(ds_size):
-        sns.lineplot(x=num_samples, y=mse_results[i, :], label=f"N={N}", marker='o')
-    plt.xlabel("Number of samples (n)", fontsize=14)
-    plt.ylabel("Mean Squared Error", fontsize=14)
-    plt.title("MSE between corrected subset and full Vendi scores", fontsize=16)
-    plt.xticks(fontsize=12)
-    plt.yticks(fontsize=12)
-    plt.yscale("log")
-    plt.grid()
-    plt.show()
+    for N in dataset_sizes:
+        print(f"Processing results for N={N} and n={n}...")
+        with open(os.path.join(results_dir, f"stochastic_vendi_{N}_{n}.pkl"), "rb") as f:
+            resultsStochastic = pkl.load(f)
+        
+        # calculate the average time saved by using random sampling
+        trueVSTimeMean.append(np.mean(resultsStochastic["time_full"]))
+        stochasticVSTimeMean.append(np.mean(resultsStochastic["time_sub"]))
 
-    # finally plot the correction factors against number of samples for different dataset sizes
-    plt.figure(figsize=(8, 6))
-    for i, N in enumerate(ds_size):
-        sns.lineplot(x=num_samples, y=correction_factors[i, :], label=f"N={N}", marker='o')
-    plt.xlabel("Number of samples (n)", fontsize=14)
-    plt.ylabel("Correction Factor", fontsize=14)
-    plt.title("Correction factors for subset Vendi scores", fontsize=16)
-    plt.xticks(fontsize=12)
-    plt.yticks(fontsize=12)
-    plt.grid()
-    plt.show()
+        trueVSTimeStd.append(np.std(resultsStochastic["time_full"]))
+        stochasticVSTimeStd.append(np.std(resultsStochastic["time_sub"]))
 
-    # also plot the average time saved by using random sampling aganst number of samples for different dataset sizes
-    plt.figure(figsize=(8, 6))
-    for i, N in enumerate(ds_size):
-        sns.lineplot(x=num_samples, y=time_saved[i, :], label=f"N={N}", marker='o')
-    plt.xlabel("Number of samples (n)", fontsize=14)
-    plt.ylabel("Average Time Saved (seconds)", fontsize=14) 
-    plt.title("Average time saved by using random sampling", fontsize=16)
-    # draw a black  solid line at y=0
-    plt.axhline(0, color='black', linestyle='--')
-    plt.xticks(fontsize=12)
-    plt.yticks(fontsize=12)
-    plt.grid()
-    plt.show()
+        # get VS results
+        VSTrue = resultsStochastic["vs_full"]
+        VSStochastic = np.mean(resultsStochastic["vs_sub"], axis=1)
+
+        # store the VS results for later plotting
+        vsTrue.append(VSTrue)
+        vsStochastic.append(VSStochastic)
+
+        # get MSE between true and stochastic VS
+        mseStochastic.append(np.mean((VSTrue - VSStochastic) ** 2))
+
+        # load the FKEA results
+        with open(os.path.join(results_dir, f"fkea_scores_{N}_{n}.pkl"), "rb") as f:
+            resultsFKEA = pkl.load(f)
+        
+        fkeaTime = resultsFKEA["scoring_time"]
+        fkeaVSTimeMean.append(np.mean(fkeaTime))
+        fkeaVSTimeStd.append(np.std(fkeaTime))
+
+        # get FKEA VS results
+        VSFKEA = np.array(resultsFKEA["fkea_scores"])
+
+        # store the FKEA VS results for later plotting
+        vsFKEA.append(VSFKEA)
+
+        # Calculate the pearson correlation between the estimates Vendi scores and the true Vendi scores
+        pearsonStochastic.append(np.corrcoef(VSTrue, VSStochastic)[0, 1])
+        pearsonFKEA.append(np.corrcoef(VSTrue, VSFKEA)[0, 1])
+
+        # calculate the spearman correlation between the estimates Vendi scores and the true Vendi scores
+        corr, p_val = scipy.stats.spearmanr(VSTrue, VSStochastic)
+        spearmanStochastic.append(corr)
+        spearmanPStochastic.append(p_val)
+        
+        corr, p_val = scipy.stats.spearmanr(VSTrue, VSFKEA)
+        spearmanFKEA.append(corr)
+        spearmanPFKEA.append(p_val)
+
+        # calculate the kendall correlation between the estimates Vendi scores and the true Vendi scores
+        corr, p_val = scipy.stats.kendalltau(VSTrue, VSStochastic)
+        kendallStochastic.append(corr)
+        kendallPStochastic.append(p_val)
+
+        corr, p_val = scipy.stats.kendalltau(VSTrue, VSFKEA)
+        kendallFKEA.append(corr)
+        kendallPFKEA.append(p_val)
+
+        # calculate the correction factor to transform the line of best fit to y=x for stochastic Vendi scores
+        A = np.vstack([VSStochastic, np.ones(len(VSStochastic))]).T
+        m, c = np.linalg.lstsq(A, VSTrue, rcond=None)[0]
+        correction_factor_stochastic = m
+
+        # apply the correction factor to the stochastic Vendi scores        
+        VSStochastic_corrected = VSStochastic * correction_factor_stochastic
+
+        # get the MSE between the corrected stochastic Vendi scores and the true Vendi scores
+        mseStochastic_corrected.append(np.mean((VSTrue - VSStochastic_corrected) ** 2))
+
+        if len(VSFKEA) != len(VSTrue):
+            print(f"Warning: Length of FKEA scores ({len(VSFKEA)}) does not match length of true Vendi scores ({len(VSTrue)}). Skipping MSE calculation for FKEA.")
+            mseFKEA.append(np.nan)
+        else:
+            # get MSE between true and FKEA VS
+            mseFKEA.append(np.mean((VSTrue - VSFKEA) ** 2))
+
+    # save the results to a dictionary and return it
+    results = {
+        "stochasticVSTimeMean": stochasticVSTimeMean,
+        "fkeaVSTimeMean": fkeaVSTimeMean,
+        "trueVSTimeMean": trueVSTimeMean,
+        "stochasticVSTimeStd": stochasticVSTimeStd,
+        "fkeaVSTimeStd": fkeaVSTimeStd,
+        "trueVSTimeStd": trueVSTimeStd,
+        "mseStochastic": mseStochastic,
+        "mseStochastic_corrected": mseStochastic_corrected,
+        "mseFKEA": mseFKEA,
+        "pearsonStochastic": pearsonStochastic,
+        "pearsonFKEA": pearsonFKEA,
+        "spearmanStochastic": spearmanStochastic,
+        "spearmanPStochastic": spearmanPStochastic,
+        "spearmanFKEA": spearmanFKEA,
+        "spearmanPFKEA": spearmanPFKEA,
+        "kendallStochastic": kendallStochastic,
+        "kendallPStochastic": kendallPStochastic,
+        "kendallFKEA": kendallFKEA,
+        "kendallPFKEA": kendallPFKEA,
+        "vsTrue": vsTrue,
+        "vsStochastic": vsStochastic,
+        "vsFKEA": vsFKEA
+    }
+
+    return results
 
 
-def plotRandomSamplingResultsByN():
-    # create some storage variables for the results
-    time_n = np.zeros((len(num_samples), len(ds_size)))
-    time_N = np.zeros((len(num_samples), len(ds_size)))
+def plotCorrelations(results, dataset_sizes, diversity_measure="FKEA"):
+    vsTrue = results["vsTrue"]
 
-    for n in num_samples:
-        for N in ds_size:
-            # load the results
-            with open(os.path.join(results_dir, f"vendi_random_sampling_{N}_{n}.pkl"), "rb") as f:
-                results = pkl.load(f)
+    if diversity_measure == "FKEA":
+        vsEstimates = results["vsFKEA"]
+        scatter_color = lred
+    elif diversity_measure == "Stochastic Vendi":
+        vsEstimates = results["vsStochastic"]
+        scatter_color = lblu
+    else:
+        raise ValueError("Invalid diversity measure. Must be either 'FKEA' or 'Stochastic Vendi'.")
 
-            # calculate the average time saved by using random sampling
-            time_full = results["time_full"]
-            time_sub = results["time_sub"]
-            avg_time_full = np.mean(time_full)
-            avg_time_sub = np.mean(time_sub)
-            
-            time_n[num_samples.index(n), ds_size.index(N)] = avg_time_sub
-            time_N[num_samples.index(n), ds_size.index(N)] = avg_time_full
+    # create a subplot for correlations with two columns and number of rows is half of dataset sizes (rounded up) using Seaborn
+    # all plots sshould have the same z and y limits which are determined by the min and max of the true Vendi scores across all dataset sizes
+    y_min = min([min(vs) for vs in vsEstimates])
+    y_max = max([max(vs) for vs in vsEstimates])
+    x_min = min([min(vs) for vs in vsTrue])
+    x_max = max([max(vs) for vs in vsTrue])
 
-    # plot the results using seaborn
-    # plot time taken for full dataset against number of samples for different dataset sizes
-    # plot also the full dataset time
-    plt.figure(figsize=(8, 6))
-    for i, n in enumerate(num_samples):
-        sns.lineplot(x=ds_size, y=time_n[i, :], label=f"n={n}", marker='o')
-    sns.lineplot(x=ds_size, y=np.mean(time_N, axis=0), label=f"Full dataset (average)", marker='o', color='black', linestyle='--')
-    plt.xlabel("Dataset size (N)", fontsize=14)
-    plt.ylabel("Time (seconds)", fontsize=14)
-    plt.xticks(fontsize=12)
-    plt.yticks(fontsize=12)
-    plt.grid()
-    plt.show()  
+    num_plots = len(dataset_sizes)
+    num_cols = 3
+    num_rows = (num_plots + 1) // num_cols
+    plt.figure(figsize=(12, num_rows * 4))
 
-
-def plotScatterResults():
-    # load the results
-    with open(os.path.join(results_dir, "vendi_random_sampling_results.pkl"), "rb") as f:
-        results = pkl.load(f)
-
-    vs_full = results["vs_full"]
-    vs_sub = results["vs_sub"]
-
-    # calculate the average and std of the subset scores
-    vs_sub_mean = np.mean(vs_sub, axis=1)
-    vs_sub_std = np.std(vs_sub, axis=1)
-
-    # calculate the correlation between full and subset scores
-    correlation = np.corrcoef(vs_full, vs_sub_mean)[0, 1]
-    print(f"Correlation between full and subset Vendi scores: {correlation:.4f}")
-    
-    # plot the results as a scatter plot with error bars
-    # left plot: full vs subset Vendi scores (without errror bars)
-    # right plot: scatter plot of full Vendi scores vs variance of subset Vendi scores
-    import matplotlib.pyplot as plt
-    plt.figure(figsize=(12, 6))
-    plt.subplot(1, 2, 1)
-    #plt.errorbar(vs_full, vs_sub_mean, yerr=vs_sub_std, fmt='o', ecolor='lightgray', elinewidth=3, capsize=0)
-    plt.scatter(vs_full, vs_sub_mean)
-    plt.xlabel("Full Vendi Score", fontsize=14)
-    plt.ylabel("Subset Vendi Score", fontsize=14)
-    plt.title("Full vs Subset Vendi Scores", fontsize=16)
-    plt.xticks(fontsize=12)
-    plt.yticks(fontsize=12)
-    plt.grid()
-
-    plt.subplot(1, 2, 2)
-    plt.scatter(vs_full, vs_sub_std)
-    plt.xlabel("Full Vendi Score", fontsize=14)
-    plt.ylabel("Subset Vendi Score Std Dev", fontsize=14)
-    plt.title("Full Vendi Score vs Subset Score Variance", fontsize=16)
-    plt.xticks(fontsize=12)
-    plt.yticks(fontsize=12)
-    plt.grid()
+    # set the color palette of seaborn to use the same colour for all the scatter plots
+    for i, N in enumerate(dataset_sizes):
+        plt.subplot(num_rows, num_cols, i + 1)
+        sns.scatterplot(x=vsTrue[i], y=vsEstimates[i], color=scatter_color)
+        plt.xlabel("True Vendi Score", fontsize=14)
+        plt.ylabel(f"{diversity_measure} Score", fontsize=14)
+        plt.title(f"N={N}", fontsize=16)
+        plt.xticks(fontsize=12)
+        plt.yticks(fontsize=12)
+        #plt.xlim(x_min, x_max)
+        plt.ylim(y_min, y_max)
+        plt.grid()
     plt.tight_layout()
     plt.show()
 
 
+def plotComputationTime(results, dataset_sizes, show=True):
+    # plot the results for time taken using seaborn (number of samples N on x axis, time on y axis)
+    # get the time results from the results dictionary
+
+    stochasticVSTimeMean = np.array(results["stochasticVSTimeMean"])
+    fkeaVSTimeMean = np.array(results["fkeaVSTimeMean"])
+    trueVSTimeMean = np.array(results["trueVSTimeMean"])
+    stochasticVSTimeStd = np.array(results["stochasticVSTimeStd"])
+    fkeaVSTimeStd = np.array(results["fkeaVSTimeStd"])
+    trueVSTimeStd = np.array(results["trueVSTimeStd"])
+
+    # create an array for the predictions of true Vendi score for larger values of N by using the pattern for smaller values of N and extrapolating it to larger values of N
+    # use a polynomial regression to extrapolate the time taken for larger values of N based on the time taken for smaller values of N
+    from sklearn.preprocessing import PolynomialFeatures
+    from sklearn.linear_model import LinearRegression
+    poly = PolynomialFeatures(degree=3)
+    X = np.array(dataset_sizes[:-2]).reshape(-1, 1)
+    X_poly = poly.fit_transform(X)
+    model = LinearRegression()
+    model.fit(X_poly, trueVSTimeMean[:-2])
+    X_pred = np.array([25000, 50000]).reshape(-1, 1)
+    X_pred_poly = poly.transform(X_pred)
+    trueVSTimePred = model.predict(X_pred_poly)
+
+    # Append Nan values to the predictions at the beginning of the predicted Vendi times
+    trueVSTimePred = np.insert(trueVSTimePred, 0, [np.nan, np.nan, np.nan, np.nan, trueVSTimeMean[-3]])
+
+    # plot the results for time taken using seaborn (number of samples N on x axis, time on y axis)
+    plt.figure(figsize=(8, 6))
+    sns.lineplot(x=dataset_sizes, y=stochasticVSTimeMean, label="Stochastic Vendi Score", marker='o')
+    plt.fill_between(dataset_sizes, stochasticVSTimeMean - stochasticVSTimeStd, stochasticVSTimeMean + stochasticVSTimeStd, alpha=0.2)
+    sns.lineplot(x=dataset_sizes, y=fkeaVSTimeMean, label="FKEA Score", marker='o', color='red')
+    plt.fill_between(dataset_sizes, fkeaVSTimeMean - fkeaVSTimeStd, fkeaVSTimeMean + fkeaVSTimeStd, alpha=0.2, color='red')
+    sns.lineplot(x=dataset_sizes, y=trueVSTimeMean, label="True Vendi Score", marker='o', color='black',)
+    sns.lineplot(x=dataset_sizes, y=trueVSTimePred, label="True Vendi Score Prediction", marker='o', color='black', linestyle='--')
+    plt.fill_between(dataset_sizes, trueVSTimeMean - trueVSTimeStd, trueVSTimeMean + trueVSTimeStd, alpha=0.2, color='black')
+    plt.xlabel("Dataset Size (N)", fontsize=14)
+    plt.ylabel("Time (seconds)", fontsize=14)
+    # set teh y axis to log scale 
+    plt.yscale("log")
+    if show:
+        plt.show()
+
+
+def plotMSE(results, dataset_sizes, show=True):
+    # plot the MSE between stochastic VS, corrected stochastic VS and FKEA VS against number of samples N
+    mseStochastic = np.array(results["mseStochastic"])
+    mseStochastic_corrected = np.array(results["mseStochastic_corrected"])
+    mseFKEA = np.array(results["mseFKEA"])
+
+    plt.figure(figsize=(8, 6))
+    sns.lineplot(x=dataset_sizes, y=mseStochastic, label="Stochastic Vendi Score", marker='o')
+    sns.lineplot(x=dataset_sizes, y=mseFKEA, label="FKEA Benchmark", marker='o')
+    sns.lineplot(x=dataset_sizes, y=mseStochastic_corrected, label="Corrected Stochastic Vendi Score", marker='o', color='green', linestyle='--')
+    plt.xlabel("Dataset Size (N)", fontsize=14)
+    plt.ylabel("Mean Squared Error", fontsize=14)
+    plt.yscale("log")
+    if show:
+        plt.show()
+
+
+def printCorrelationCoefficients(results, dataset_sizes):
+    # print out the correlation coefficients for each dataset size N in a format suitable for LaTeX
+    # use a bold font if the significant p-value is less than 0.05
+
+    # get the correlation coefficients and p-values from the results dictionary
+    spearmanStochastic = results["spearmanStochastic"]
+    spearmanPStochastic = results["spearmanPStochastic"]
+    spearmanFKEA = results["spearmanFKEA"]
+    spearmanPFKEA = results["spearmanPFKEA"]
+    kendallStochastic = results["kendallStochastic"]
+    kendallPStochastic = results["kendallPStochastic"]
+    kendallFKEA = results["kendallFKEA"]
+    kendallPFKEA = results["kendallPFKEA"]
+
+    for i, N in enumerate(dataset_sizes):
+        if kendallPStochastic[i] < 0.05:
+            print(r"& \bf{" + f"{kendallStochastic[i]:.2f}" + r"} ", end ="") 
+        else:
+            print(f"{kendallStochastic[i]:.2f}", end ="")
+        
+        if kendallPFKEA[i] < 0.05:
+            print(r"& \bf{" + f"{kendallFKEA[i]:.2 f}" + r"} ", end="")
+        else:
+            print(f"& {kendallFKEA[i]:.2f}", end="")
+
+    print(r"\\", end="\n")                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
+
+    for i, N in enumerate(dataset_sizes):
+        if spearmanPStochastic[i] < 0.05:
+            print(r"& \bf{" + f"{spearmanStochastic[i]:.2f}" + r"} ", end ="") 
+        else:
+            print(f"& {spearmanStochastic[i]:.2f}", end ="")
+
+        if spearmanPFKEA[i] < 0.05:
+            print(r"& \bf{" + f"{spearmanFKEA[i]:.2f}" + r"} ", end="")
+        else:
+            print(f"& {spearmanFKEA[i]:.2f}", end ="")
+
+    print(r"\\", end="\n")
+    
+
 def main():
-    #plotRandomSamplingResults()
-    #plotScatterResults()
-    plotRandomSamplingResultsByN()
+    dataset_sizes = [1000, 2000, 5000, 10000, 15000, 25000, 50000]
+    results = processResults(dataset_sizes, sample_size=100)
+
+    printCorrelationCoefficients(results, dataset_sizes[:-2])
+    plotMSE(results, dataset_sizes, show=True)
+    plotComputationTime(results, dataset_sizes, show=True)
+    plotCorrelations(results, dataset_sizes[:-2], diversity_measure="Stochastic Vendi")
+    plotCorrelations(results, dataset_sizes[:-2], diversity_measure="FKEA")
 
 if __name__ == "__main__":
     main()
