@@ -178,12 +178,39 @@ def diseaseDistributionPlot(save_plots=False):
     else:
         plt.show()
     plt.close()
+
+
+def selectPleuralEffusion():
+    # select for prescence and absence of pleural effusion and print the counts for each
+    df = pd.read_csv(reduced_csv)
+    pleural_effusion_counts = df['Pleural Effusion'].value_counts()
+    print("Pleural Effusion Counts:")
+    print(pleural_effusion_counts)
+
+    # now look at the distribution of sex (in terms of counts and proportions) for the presence and absence of pleural effusion
+    pleural_effusion_sex_counts = df.groupby('Pleural Effusion')['Sex'].value_counts()
+    print("\nSex Distribution by Pleural Effusion Presence:")
+    print(pleural_effusion_sex_counts)
+
+    # look at the distribution of age (in terms of counts and proportions) for the presence and absence of pleural effusion
+    bins = [19, 40, 60, 80, 100]
+    labels = ['19-39', '40-59', '60-79', '80+']
+    df['AgeGroup'] = pd.cut(df['Age'], bins=bins, labels=labels, right=False)
+    pleural_effusion_agegroup_counts = df.groupby('Pleural Effusion')['AgeGroup'].value_counts()
+    print("\nAge Group Distribution by Pleural Effusion Presence:")
+    print(pleural_effusion_agegroup_counts)
+
+    # look at the distribution of sex across the age groups for the presence and absence of pleural effusion
+    pleural_effusion_agegroup_sex_counts = df.groupby(['Pleural Effusion', 'AgeGroup'])['Sex'].value_counts()
+    print("\nSex Distribution by Age Group and Pleural Effusion Presence:")
+    print(pleural_effusion_agegroup_sex_counts)
                     
 
 def main():
     #diseaseDistributionPlot(save_plots=True)
-    printBasicStatistics()
+    #printBasicStatistics()
     #ageDistributionPlot(save_plots=True)
+    selectPleuralEffusion()
 
 
 if __name__ == "__main__":
