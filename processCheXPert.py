@@ -54,9 +54,12 @@ def processImages(data_dir, split="train"):
         
         # check whether we have study1 view1 frontal
         study1_view1 = os.path.join(patient_dir, 'study1', 'view1_frontal.jpg')
+
         if not os.path.exists(study1_view1):
             print('Missing study1 view1 for patient {}'.format(patient))
         else:
+            print('Processing patient {}'.format(patient))
+
             # open the jpg image and save it as a numpy array
             img = Image.open(study1_view1)
             img_np = np.array(img)
@@ -66,8 +69,16 @@ def processImages(data_dir, split="train"):
             # save the numpy array as a .npy file
             np.save(os.path.join(npy_dir, f"img_{format(image_counter, '05d')}.npy"), img_np)
 
+            
+            patient_path = os.path.join("CheXpert-v1.0-small/" + split + "/", patient, 'study1', 'view1_frontal.jpg')
+
+            # check that the patient information is available in the metadata csv file by checking patienbt path is in the 'Path' column of the metadata csv file
+            if patient_path not in df['Path'].values:
+                print('Patient path {} not found in metadata csv file'.format(patient_path))
+                continue
+
             # copy the information to a new dataframe for the reduced dataset
-            patient_info = df[df['Path'] == os.path.join(image_dir, patient, 'study1', 'view1_frontal.jpg')]
+            patient_info = df[df['Path'] == patient_path]
 
             # add the x and y dimensions of the image
             patient_info["img_shape_x"] = img_np.shape[0]
@@ -75,14 +86,21 @@ def processImages(data_dir, split="train"):
             patient_info["patient_id"] = patient
             patient_info["image_id"] = format(image_counter, '05d')
 
-            # update the train_reduced dataframe
-            df_reduced = df_reduced.append(patient_info)
+            # update the df_reduced dataframe with the patient information on a new row
+            # check the index of the last row in the df_reduced dataframe and add 1 to it to get the index for the new row
+            if df_reduced.shape[0] == 0:
+                new_index = 0
+            else:                
+                new_index = df_reduced.index[-1] + 1
+
+            df_reduced.loc[new_index] = patient_info.values[0]
 
             # increment the image counter
             image_counter += 1
 
     # save the reduced metadata csv 
     df_reduced.to_csv(os.path.join(data_dir, f'{split}_reduced.csv'), index=False)
+
     print('Saved new metadata CSV file with {} entries'.format(df_reduced.shape[0]))
 
 
